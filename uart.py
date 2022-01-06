@@ -29,7 +29,7 @@ class Uart:
             parity=serial.PARITY_NONE,
             stopbits=serial.STOPBITS_ONE,
             bytesize=serial.EIGHTBITS,
-            # timeout=0.5, # IMPORTANT, can be lower or higher
+            timeout=0.5, # IMPORTANT, can be lower or higher
             # inter_byte_timeout=0.1 # Alternative
         )
 
@@ -76,11 +76,17 @@ class Uart:
         replya = []
         reply = ''
         # send command
+        print(command.encode('ascii'))
+        
         self.currentPort.write(command.encode('ascii'))
         
-        
-        while 1:
+        print("sended")
+        j = 0
+        while j <5:
+            print (j)
             c = self.currentPort.read()
+            print('.', end="")
+            print(c)
             if c != b'':
                 print("[{}]".format(hex(ord(c))), end='')
                 if c == b'\n':
@@ -89,6 +95,9 @@ class Uart:
                     pass
                 else:
                     replya.append(c.decode('ascii'))
+            #time.sleep(0.01)
+            j = j+1
+                    
         print('\n')
         print('re = {}'.format(replya))
         for ch in replya:
@@ -127,5 +136,5 @@ class Uart:
     def getBuffer(self):
         return self.buffer
 
-    #def parse(self):
+    
 
