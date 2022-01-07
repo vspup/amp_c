@@ -11,8 +11,17 @@ from uart import *
 serJ18 = Uart()
 dt = 0
 
-fConnectJ18 = False
+fConnectJ18 = False # state cmd Connect
+f_amp = False # stat cmd OnOff
+f_init_mode = True #if fierst on
+fUnblank = False # cmd unblank
+fOperate = False # cmd operate
+f_work = False
+fUart = False # acces to uart
 work_regime = 0
+mode = 1 # 1- body 2 head
+cur_mode = 0
+
 
 # start windows
 window_root = Tk()
@@ -31,40 +40,66 @@ frameJ18.rowconfigure(0, weight=1)
 
 # state
 frameState = LabelFrame(frameJ18, text='state', )
-frameState.grid(column=0, row=0, padx=10, pady=10, sticky='nsew', columnspan=2)
+frameState.grid(column=0, row=0, padx=10, pady=10, sticky='nsew', columnspan=2, rowspan=2)
 labelState = Label(frameState, text="")
 labelState.pack()
 # mode
 frameMode = LabelFrame(frameJ18, text='mode', )
-frameMode.grid(column=2, row=0, padx=10, pady=10, sticky='nsew')
+frameMode.grid(column=2, row=0, padx=10, pady=10, sticky='nsew', rowspan=2)
 labelMode = Label(frameMode, text="")
 labelMode.pack()
 
 # command
 cmdOnOf = Button(frameJ18, text="On", bg="light grey")
-cmdOnOf.grid(column=0, row=1, sticky='nsew', padx=10, pady=10)
+cmdOnOf.grid(column=0, row=2, sticky='nsew', padx=10, pady=10)
 cmdOnOf["state"] = "disabled"
-cmdHeadBody = Button(frameJ18, text="Body", bg="light grey")
-cmdHeadBody.grid(column=1, row=1, sticky='nsew', padx=10, pady=10)
+cmdHeadBody = Button(frameJ18, text="ch to ", bg="light grey")
+cmdHeadBody.grid(column=1, row=2, sticky='nsew', padx=10, pady=10)
 cmdHeadBody["state"] = "disabled"
-cmdOperate = Button(frameJ18, text="Operate", bg="light grey")
-cmdOperate.grid(column=2, row=1, sticky='nsew', padx=10, pady=10)
+cmdOperate = Button(frameJ18, text="On Operate", bg="light grey")
+cmdOperate.grid(column=2, row=2, sticky='nsew', padx=10, pady=10)
 cmdOperate["state"]= "disabled"
+cmdUnblank = Button(frameJ18, text="On Unblank", bg="light grey")
+cmdUnblank.grid(column=3, row=2, sticky='nsew', padx=10, pady=10)
+cmdUnblank["state"]= "disabled"
 
 # serial
 SerialsJ18 = ttk.Combobox(frameJ18, values=serJ18.getListPort())
-SerialsJ18.grid(column=0, row=2, sticky='nsew', padx=10, pady=10)
+SerialsJ18.grid(column=0, row=3, sticky='nsew', padx=10, pady=10)
 SerialsJ18.current(0)
-
-
 cmdConnectJ18 = Button(frameJ18, text="Connect", bg="light grey")
-cmdConnectJ18.grid(column=1, row=2, padx=10, pady=10, sticky='nsew')
+cmdConnectJ18.grid(column=1, row=3, padx=10, pady=10, sticky='nsew')
 
+# extra inform
+labelExtra = Label(frameJ18, text='', )
+labelExtra.grid(column=3, row=3, padx=10, pady=10, sticky='nsew', columnspan=2)
 
+# for unblank
+frameUn = LabelFrame(frameJ18, text='dT', )
+frameUn.grid(column=3, row=0, padx=10, pady=10, sticky='nsew', columnspan=2)
+labelUndT = Entry(frameUn, text='DTY', )
+labelUndT.grid(column=0, row=0, padx=10, pady=10, sticky='nsew')
+cmdDT = Button(frameUn, text='set')
+cmdDT.grid(column=1, row=0, padx=5, pady=10, sticky='nsew')
+labelUndT['state'] ='disable'
+frameUnT = LabelFrame(frameJ18, text='dT', )
+frameUnT.grid(column=3, row=1, padx=10, pady=10, sticky='nsew', columnspan=2)
+cmdDT['state'] ='disable'
+labelUnT = Entry(frameUnT, text='T', )
+labelUnT.grid(column=0, row=0, padx=5, pady=10, sticky='nsew')
+cmdT = Button(frameUnT, text='set')
+cmdT.grid(column=1, row=0, padx=5, pady=10, sticky='nsew')
+labelUnT['state'] ='disable'
+cmdT['state'] ='disable'
 
 
 def connectJ18():
     global fConnectJ18
+    global f_amp
+    global f_init_mode
+    global fUnblank
+    global fOperate
+    global f_work
     
     if not fConnectJ18:
         labelState["text"] = ""
@@ -76,11 +111,12 @@ def connectJ18():
             # mcu detect            
             print ("send 21")
             cmd_MCU = '<21>'
-            re = serJ18.transmit(cmd_MCU)
+            re = serJ18.transmit(cmd_MCU, 20)
             print(re)
             if re=='a':
                 cmdOnOf["state"] = "normal"
-                cmdConnectJ18['text'] = "Connected"
+                cmdOnOf["text"] = "ON"
+                cmdConnectJ18['text'] = "Disconect"
                 fConnectJ18 = True
                 labelState["text"] = "connect to MCU"
             else:
@@ -91,75 +127,256 @@ def connectJ18():
         
     else:
         fConnectJ18 = False
+        f_amp = False
+        f_init_mode = True
+        fOperate = False
+        if fUnblank:
+            cmd_ = '<188>'
+            re = serJ18.transmit(cmd_, 10)
+            print (re)
+            print ('stop unblank')
+            fUnblank = False
+            cmdUnblank['text'] = "on Unblank"
+            labelUndT['text'] = 'LOW'
         cmdConnectJ18['text'] = "Connect"
+        
         serJ18.disconnectPort()
         print('Disconnect ' + str(serJ18.currentPort))
-        fWork = False
         cmdOnOf["state"] = "disable"
         cmdHeadBody["state"] = "disable"
+        
         cmdOperate["state"] = "disable"
+        cmdOperate["text"] = "on Operate"
+        fUnblank = False
+        
+        cmdUnblank["state"] = "disable"
+        
         labelState["text"] = ""
+        labelMode['text'] = ""
+        labelExtra['text'] = ""
+        f_work = False
 
 
 def setOnOff():
     global work_regime
-    work_regime = 0
-    cmd_ID = '<113>'
-    re = serJ18.transmit(cmd_ID)
-    print (re)
-    if re=='90':
-        work_regime = 1
-    elif re == "na":
-        print("not answer 113")
+    global fUart
+    global f_amp
+    global fUnblank
+    global fOperate
+    global f_work
+    fUart = True
+    
+    if f_amp == False:
+        labelState["text"] = "try connect to AMP..."
+        cmd_ID = '<113>'
+        re = serJ18.transmit(cmd_ID, 200)
+        print (re)
+        if re=='90':
+            work_regime = 1
+            f_amp = True
+            f_work = True
+            cmd_ = '<101>'
+            re = serJ18.transmit(cmd_, 10)
+            print (re)
+            if re!='na':
+                print ("cmd ok")
+                cmdOnOf['text'] = "OFF"
+            
+        elif re == "na":
+            labelState["text"] = "error connect to AMP"
+            print("not answer 113")
+    elif f_amp == True:
+        if fUnblank:
+            cmd_ = '<188>'
+            re = serJ18.transmit(cmd_, 10)
+            print (re)
+            print ('stop unblank')
+            fUnblank = False
+            cmdUnblank['text'] = "on Unblank"
+            
+        
+        cmd_ = '<100>'
+        re = serJ18.transmit(cmd_, 10)
+        print (re)
+        if re!='na':
+            print ("cmd ok")
+            work_regime = 0
+            cmdOnOf['text'] = "ON"
+            f_amp = False
+            labelUndT['text'] = 'LOW'
+        
+        labelState["text"] = ""
+        labelMode['text'] = ""
+        labelExtra['text'] = ""
+        cmdHeadBody["state"] = "disable"
+        cmdOperate["state"] = "disable"
+        cmdOperate["text"] = "on Operate"
+        cmdUnblank["state"] = "disable"
+        cmdUnblank['text'] = "on Unblank"
+        fOperate = False
+            
     fUart = False
 
 
 
 def setMode():
     global fUart
+    global mode
     fUart = True
-    cmd_B = '<177>'
-    re = serJ18.send(cmd_B)
-    print (re)
-    answer.configure(text=re)
+    
+    if mode == 1:    
+        cmd_B = '<140>'
+        re = serJ18.transmit(cmd_B, 10)
+        print (re)
+        cmdHeadBody['text'] = "ch to BODY"
+        mode = 2
+    elif mode == 2:    
+        cmd_B = '<160>'
+        re = serJ18.transmit(cmd_B, 10)
+        print (re)
+        cmdHeadBody['text'] = "ch to HEAD"
+        mode = 1
+    
     fUart = False
+    
+    
 
 def setOperate():
     global fUart
     fUart = True
-    cmd_B = '<188>'
-    re = serJ18.send(cmd_B)
-    print (re)
-    answer.configure(text=re)
+    global work_regime
+    global fOperate
+    global fUnblank
+    
+    if fOperate == False:        
+        cmd_ = '<103>'
+        re = serJ18.transmit(cmd_, 10)
+        print (re)
+        fOperate = True
+        cmdOperate['text'] = "on Stanby"
+        
+        
+    elif fOperate == True:        
+        if fUnblank:
+            cmd_ = '<188>'
+            re = serJ18.transmit(cmd_, 10)
+            print (re)
+            print ('stop unblank')
+            fUnblank = False
+            cmdUnblank['text'] = "on Unblank"
+            labelUndT['text'] = 'LOW'
+        cmd_ = '<101>'
+        re = serJ18.transmit(cmd_, 10)
+        print (re)
+        fOperate = False
+        cmdOperate['text'] = "on Operate"
+        cmd_ = '<188>'
+        re = serJ18.transmit(cmd_, 10)
+        print (re)
+        cmdUnblank['state'] = 'disable' 
+        
     fUart = False
+    
+    
+    
+def setUnblank():
+    global fUnblank
+    global fUart
+    fUart = True
+    if fUnblank == True:
+        cmd_ = '<188>'
+        re = serJ18.transmit(cmd_, 10)
+        print (re)
+        cmdUnblank['text'] = "on Unblank"
+        labelUndT['text'] = 'LOW'
+        fUnblank=False
+        
+    elif fUnblank == False: 
+        cmd_ = '<177>'
+        re = serJ18.transmit(cmd_, 10)
+        print (re)
+        cmdUnblank['text'] = "off Unblank"
+        labelUndT['text'] = 'HIGH'
+        fUnblank=True
+        
+    fUart = False   
+
 
 cmdConnectJ18['command'] = connectJ18
-
-
 cmdOnOf['command'] = setOnOff
 cmdHeadBody['command'] = setMode
 cmdOperate['command'] = setOperate
+cmdUnblank['command'] = setUnblank
 
 
 
 def update():
     global dt
     global fUart
+    global f_amp
+    global cur_mode
+    global work_regime
+    global mode
+    global f_init_mode
+    global f_work
     
-    if work_regime == 0:
-        pass
-    elif work_regime == 1:
-        print("working")
+    
+    if f_work:
         
         if fUart == False:
-            if 1>0:
-                print("get state")
-                st1 = '<111>'
-                res = serJ18.transmit(st1)
-                labelMode.configure(text=res)
-                st2 = '<112>'
-                res = serJ18.transmit(st2)
                 
+            print("get state")
+            st1 = '<111>'
+            reState = serJ18.transmit(st1, 10)
+                
+            if reState == "25":
+                labelState.configure(text="wait")
+                cmdHeadBody["state"] = "disable"
+                work_regime = 1
+            elif reState == "29":
+                labelState.configure(text="stanby")                
+                cmdHeadBody["state"] = "normal"
+                #initialize mode
+                if f_init_mode:
+                    if cur_mode == 1:
+                        cmdHeadBody['text'] = "ch to HEAD"
+                        mode = 1
+                    elif cur_mode == 2:
+                        cmdHeadBody['text'] = "ch to BODY"
+                        mode = 2
+                    f_init_mode = False
+                ##                    
+                cmdOperate["state"] = "normal"
+                work_regime = 2
+            elif reState == "3B":
+                labelState.configure(text="operate")
+                cmdHeadBody["state"] = "disable"
+                cmdUnblank['state'] = "normal"
+                work_regime = 3                
+            elif reState == "20":
+                labelState.configure(text="off")
+                cmdHeadBody["state"] = "disable"
+                work_regime = 0
+            else :
+                labelState.configure(text="fault" + reState)
+                work_regime = 9
+                    
+            st2 = '<112>'
+            reMode = serJ18.transmit(st2, 10)
+            if reMode == '60':
+                print("body")
+                labelMode.configure(text='body')
+                cur_mode = 1
+            elif reMode == '40':
+                labelMode.configure(text='head')
+                cur_mode = 2
+            else:
+                labelMode.configure(text='')
+            
+            labelExtra.configure(text= reState+' / '+reMode )
+            
+                    
+                    
         
     window_root.after(1000, update)
 

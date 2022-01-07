@@ -71,24 +71,24 @@ class Uart:
         return count
 
 
-    def transmit(self, command):
+    def transmit(self, command, jmax):
         # massiv on re
         replya = []
         reply = ''
         # send command
-        print(command.encode('ascii'))
+        #print(command.encode('ascii'))
         
         self.currentPort.write(command.encode('ascii'))
         
         print("sended")
         j = 0
-        while j <5:
-            print (j)
+        while j <jmax:
+            #print (j)
             c = self.currentPort.read()
-            print('.', end="")
-            print(c)
+            #print('.', end="")
+            #print(c)
             if c != b'':
-                print("[{}]".format(hex(ord(c))), end='')
+                #print("[{}]".format(hex(ord(c))), end='')
                 if c == b'\n':
                     break
                 if (c == b'\r'):
@@ -98,7 +98,7 @@ class Uart:
             #time.sleep(0.01)
             j = j+1
                     
-        print('\n')
+        #print('\n')
         print('re = {}'.format(replya))
         for ch in replya:
             reply = reply + ch
