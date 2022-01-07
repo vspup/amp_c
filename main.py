@@ -45,7 +45,7 @@ labelState = Label(frameState, text="")
 labelState.pack()
 # mode
 frameMode = LabelFrame(frameJ18, text='mode', )
-frameMode.grid(column=2, row=0, padx=10, pady=10, sticky='nsew', rowspan=2)
+frameMode.grid(column=2, row=0, padx=10, pady=10, sticky='nsew', rowspan=2, columnspan=2)
 labelMode = Label(frameMode, text="")
 labelMode.pack()
 
@@ -75,22 +75,50 @@ labelExtra = Label(frameJ18, text='', )
 labelExtra.grid(column=3, row=3, padx=10, pady=10, sticky='nsew', columnspan=2)
 
 # for unblank
-frameUn = LabelFrame(frameJ18, text='dT', )
-frameUn.grid(column=3, row=0, padx=10, pady=10, sticky='nsew', columnspan=2)
-labelUndT = Entry(frameUn, text='DTY', )
-labelUndT.grid(column=0, row=0, padx=10, pady=10, sticky='nsew')
-cmdDT = Button(frameUn, text='set')
-cmdDT.grid(column=1, row=0, padx=5, pady=10, sticky='nsew')
-labelUndT['state'] ='disable'
-frameUnT = LabelFrame(frameJ18, text='dT', )
-frameUnT.grid(column=3, row=1, padx=10, pady=10, sticky='nsew', columnspan=2)
-cmdDT['state'] ='disable'
-labelUnT = Entry(frameUnT, text='T', )
-labelUnT.grid(column=0, row=0, padx=5, pady=10, sticky='nsew')
-cmdT = Button(frameUnT, text='set')
-cmdT.grid(column=1, row=0, padx=5, pady=10, sticky='nsew')
-labelUnT['state'] ='disable'
-cmdT['state'] ='disable'
+# t1 low time
+frameUnT1 = LabelFrame(frameJ18, text='T1', )
+frameUnT1.grid(column=4, row=0, padx=10, pady=10, sticky='nsew')
+labelUnT1 = Entry(frameUnT1, text='', )
+labelUnT1.grid(column=0, row=0, padx=10, pady=10, sticky='nsew')
+cmdT1 = Button(frameUnT1, text='set T1')
+cmdT1.grid(column=1, row=0, padx=5, pady=10, sticky='nsew')
+labelUnT1['state'] ='disable'
+cmdT1['state'] ='disable'
+# t2 high time
+frameT2 = LabelFrame(frameJ18, text='T2', )
+frameT2.grid(column=4, row=1, padx=10, pady=10, sticky='nsew')
+labelUnT2 = Entry(frameT2)
+labelUnT2.grid(column=0, row=0, padx=5, pady=10, sticky='nsew')
+cmdT2 = Button(frameT2, text='set T2')
+cmdT2.grid(column=1, row=0, padx=5, pady=10, sticky='nsew')
+labelUnT2['state'] ='disable'
+cmdT2['state'] ='disable'
+
+var = IntVar()
+def sel():
+    global n1, n2    
+    print("You selected the option " + str(var.get()))
+    if(var.get() == 1):
+        cmdT1['state'] ='normal'
+        cmdT2['state'] ='normal'
+        labelUnT1['state'] ='normal'
+        labelUnT2['state'] ='normal'
+        labelUnT1.delete(0, END)
+        labelUnT2.delete(0, END)
+        labelUnT1.insert(0, str(n1))
+        labelUnT2.insert(0, str(n2))
+    elif(var.get() == 0):
+        labelUnT1['state'] ='disable'
+        labelUnT2['state'] ='disable'
+        cmdT1['state'] ='disable'
+        cmdT2['state'] ='disable'
+        
+
+
+enUn = Checkbutton(frameJ18, text='custom Time', variable=var, command=sel)
+enUn.grid(column=4, row=2, padx=10, pady=10, sticky='nsew')
+enUn['state'] = 'disable'
+
 
 
 def connectJ18():
@@ -100,6 +128,7 @@ def connectJ18():
     global fUnblank
     global fOperate
     global f_work
+    global n1, n2
     
     if not fConnectJ18:
         labelState["text"] = ""
@@ -109,16 +138,28 @@ def connectJ18():
             time.sleep(1)
             
             # mcu detect            
-            print ("send 21")
-            cmd_MCU = '<21>'
+            cmd_MCU = '<20>'
             re = serJ18.transmit(cmd_MCU, 20)
             print(re)
             if re=='a':
                 cmdOnOf["state"] = "normal"
                 cmdOnOf["text"] = "ON"
                 cmdConnectJ18['text'] = "Disconect"
+                
+                #get current T
+                cmd_MCU = '<21>'
+                re = serJ18.transmit(cmd_MCU, 5)
+                print(re)                
+                n1 = int(re)
+                cmd_MCU = '<22>'
+                re = serJ18.transmit(cmd_MCU, 5)
+                print(re)
+                n2 = int(re)
+                enUn['state'] = 'normal'
+                
                 fConnectJ18 = True
                 labelState["text"] = "connect to MCU"
+                
             else:
                 cmdConnectJ18['text'] = "Connect"
                 serJ18.disconnectPort()
@@ -137,7 +178,7 @@ def connectJ18():
             print ('stop unblank')
             fUnblank = False
             cmdUnblank['text'] = "on Unblank"
-            labelUndT['text'] = 'LOW'
+            labelUnT1['text'] = 'LOW'
         cmdConnectJ18['text'] = "Connect"
         
         serJ18.disconnectPort()
@@ -155,6 +196,20 @@ def connectJ18():
         labelMode['text'] = ""
         labelExtra['text'] = ""
         f_work = False
+        labelUnT1['state'] ='normal'
+        labelUnT2['state'] ='normal'
+        labelUnT1.delete(0, END)
+        labelUnT2.delete(0, END)
+        labelUnT1['state'] ='disable'
+        labelUnT2['state'] ='disable'
+        cmdT1['state'] ='disable'
+        cmdT2['state'] ='disable'
+        var.set(0)
+        n1 = 0
+        n2 = 0
+        enUn['state'] = 'disable'
+        
+        
 
 
 def setOnOff():
@@ -203,7 +258,7 @@ def setOnOff():
             work_regime = 0
             cmdOnOf['text'] = "ON"
             f_amp = False
-            labelUndT['text'] = 'LOW'
+            labelUnT1['text'] = 'LOW'
         
         labelState["text"] = ""
         labelMode['text'] = ""
@@ -264,7 +319,7 @@ def setOperate():
             print ('stop unblank')
             fUnblank = False
             cmdUnblank['text'] = "on Unblank"
-            labelUndT['text'] = 'LOW'
+            labelUnT1['text'] = 'LOW'
         cmd_ = '<101>'
         re = serJ18.transmit(cmd_, 10)
         print (re)
@@ -288,7 +343,7 @@ def setUnblank():
         re = serJ18.transmit(cmd_, 10)
         print (re)
         cmdUnblank['text'] = "on Unblank"
-        labelUndT['text'] = 'LOW'
+        labelUnT1['text'] = 'LOW'
         fUnblank=False
         
     elif fUnblank == False: 
@@ -296,17 +351,44 @@ def setUnblank():
         re = serJ18.transmit(cmd_, 10)
         print (re)
         cmdUnblank['text'] = "off Unblank"
-        labelUndT['text'] = 'HIGH'
+        labelUnT1['text'] = 'HIGH'
         fUnblank=True
         
     fUart = False   
 
+
+def setT1():
+    global n1
+    cmd_ = '<3'+str(labelUnT1.get())+'>'
+    re = serJ18.transmit(cmd_, 10)
+    print (re)
+    cmd_ = '<21>'
+    re = serJ18.transmit(cmd_, 10)
+    print (re)
+    n1=int(re)
+    labelUnT1.delete(0, END)
+    labelUnT1.insert(0, str(n1))
+    
+    
+def setT2():
+    global n2
+    cmd_ = '<4'+str(labelUnT2.get())+'>'
+    re = serJ18.transmit(cmd_, 10)
+    print (re)
+    cmd_ = '<22>'
+    re = serJ18.transmit(cmd_, 10)
+    print (re)
+    n2=int(re)
+    labelUnT2.delete(0, END)
+    labelUnT2.insert(0, str(n2))        
 
 cmdConnectJ18['command'] = connectJ18
 cmdOnOf['command'] = setOnOff
 cmdHeadBody['command'] = setMode
 cmdOperate['command'] = setOperate
 cmdUnblank['command'] = setUnblank
+cmdT1['command'] = setT1
+cmdT2['command'] = setT2
 
 
 
@@ -319,9 +401,14 @@ def update():
     global mode
     global f_init_mode
     global f_work
+    global n1, n2
     
     
     if f_work:
+        #labelUnT1.delete(0, END)
+        #labelUnT2.delete(0, END)
+        #labelUnT1.insert(0, str(n1))
+        #labelUnT2.insert(0, str(n2))
         
         if fUart == False:
                 

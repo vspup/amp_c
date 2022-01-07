@@ -79,8 +79,7 @@ class Uart:
         #print(command.encode('ascii'))
         
         self.currentPort.write(command.encode('ascii'))
-        
-        print("sended")
+                
         j = 0
         while j <jmax:
             #print (j)
