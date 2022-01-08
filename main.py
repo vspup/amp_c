@@ -94,11 +94,13 @@ cmdT2.grid(column=1, row=0, padx=5, pady=10, sticky='nsew')
 labelUnT2['state'] ='disable'
 cmdT2['state'] ='disable'
 
-var = IntVar()
+fUnCustom = IntVar()
+fExtUnblank = IntVar()
+
 def sel():
     global n1, n2    
-    print("You selected the option " + str(var.get()))
-    if(var.get() == 1):
+    print("You selected the option " + str(fUnCustom.get()))
+    if(fUnCustom.get() == 1):
         cmdT1['state'] ='normal'
         cmdT2['state'] ='normal'
         labelUnT1['state'] ='normal'
@@ -107,7 +109,7 @@ def sel():
         labelUnT2.delete(0, END)
         labelUnT1.insert(0, str(n1))
         labelUnT2.insert(0, str(n2))
-    elif(var.get() == 0):
+    elif(fUnCustom.get() == 0):
         labelUnT1['state'] ='disable'
         labelUnT2['state'] ='disable'
         cmdT1['state'] ='disable'
@@ -115,9 +117,13 @@ def sel():
         
 
 
-enUn = Checkbutton(frameJ18, text='custom Time', variable=var, command=sel)
-enUn.grid(column=4, row=2, padx=10, pady=10, sticky='nsew')
-enUn['state'] = 'disable'
+enUnCustom = Checkbutton(frameJ18, text='custom Time', variable=fUnCustom, command=sel)
+enUnCustom.grid(column=4, row=2, padx=10, pady=10, sticky='nsew')
+enUnCustom['state'] = 'disable'
+
+enExUn = Checkbutton(frameJ18, text='custom Time', variable=fExtUnblank)
+enExUn.grid(column=4, row=3, padx=10, pady=10, sticky='nsew')
+
 
 
 
@@ -155,7 +161,7 @@ def connectJ18():
                 re = serJ18.transmit(cmd_MCU, 5)
                 print(re)
                 n2 = int(re)
-                enUn['state'] = 'normal'
+                enUnCustom['state'] = 'normal'
                 
                 fConnectJ18 = True
                 labelState["text"] = "connect to MCU"
@@ -204,10 +210,10 @@ def connectJ18():
         labelUnT2['state'] ='disable'
         cmdT1['state'] ='disable'
         cmdT2['state'] ='disable'
-        var.set(0)
+        fUnCustom.set(0)
         n1 = 0
         n2 = 0
-        enUn['state'] = 'disable'
+        enUnCustom['state'] = 'disable'
         
         
 
