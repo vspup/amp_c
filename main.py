@@ -72,7 +72,7 @@ cmdConnectJ18.grid(column=1, row=3, padx=10, pady=10, sticky='nsew')
 
 # extra inform
 labelExtra = Label(frameJ18, text='', )
-labelExtra.grid(column=3, row=3, padx=10, pady=10, sticky='nsew', columnspan=2)
+labelExtra.grid(column=2, row=3, padx=10, pady=10, sticky='nsew', columnspan=2)
 
 # for unblank
 # t1 low time
@@ -88,7 +88,7 @@ cmdT1['state'] ='disable'
 frameT2 = LabelFrame(frameJ18, text='T2', )
 frameT2.grid(column=4, row=1, padx=10, pady=10, sticky='nsew')
 labelUnT2 = Entry(frameT2)
-labelUnT2.grid(column=0, row=0, padx=5, pady=10, sticky='nsew')
+labelUnT2.grid(column=0, row=0, padx=10, pady=10, sticky='nsew')
 cmdT2 = Button(frameT2, text='set T2')
 cmdT2.grid(column=1, row=0, padx=5, pady=10, sticky='nsew')
 labelUnT2['state'] ='disable'
@@ -107,8 +107,10 @@ def sel():
         labelUnT2['state'] ='normal'
         labelUnT1.delete(0, END)
         labelUnT2.delete(0, END)
-        labelUnT1.insert(0, str(n1))
-        labelUnT2.insert(0, str(n2))
+        st1=(n1+1)*256/16000 +(n2+1)*256/16000
+        st2= (n2+1)*256/16000
+        labelUnT1.insert(0, str(st1))
+        labelUnT2.insert(0, str(st2))
     elif(fUnCustom.get() == 0):
         labelUnT1['state'] ='disable'
         labelUnT2['state'] ='disable'
@@ -117,12 +119,13 @@ def sel():
         
 
 
-enUnCustom = Checkbutton(frameJ18, text='custom Time', variable=fUnCustom, command=sel)
+enUnCustom = Checkbutton(frameJ18, text='Custom Unblank', variable=fUnCustom, command=sel)
 enUnCustom.grid(column=4, row=2, padx=10, pady=10, sticky='nsew')
 enUnCustom['state'] = 'disable'
 
-enExUn = Checkbutton(frameJ18, text='custom Time', variable=fExtUnblank)
+enExUn = Checkbutton(frameJ18, text='External Unblank', variable=fExtUnblank)
 enExUn.grid(column=4, row=3, padx=10, pady=10, sticky='nsew')
+fExtUnblank.set(1)
 
 
 
@@ -351,6 +354,10 @@ def setUnblank():
         cmdUnblank['text'] = "on Unblank"
         labelUnT1['text'] = 'LOW'
         fUnblank=False
+        labelUnT1['state'] = 'normal'
+        labelUnT2['state'] = 'normal'
+        cmdT1['state'] = 'normal'
+        cmdT2['state'] = 'normal'
         
     elif fUnblank == False: 
         cmd_ = '<177>'
@@ -359,34 +366,72 @@ def setUnblank():
         cmdUnblank['text'] = "off Unblank"
         labelUnT1['text'] = 'HIGH'
         fUnblank=True
+        labelUnT1['state'] = 'disable'
+        labelUnT2['state'] = 'disable'
+        cmdT1['state'] = 'disable'
+        cmdT2['state'] = 'disable'
         
     fUart = False   
 
 
 def setT1():
-    global n1
-    cmd_ = '<3'+str(labelUnT1.get())+'>'
+    global n1, n2
+    cmdUnblank['state'] = 'disable'
+    n1 = int(round(float(labelUnT1.get())*16000/256 - 1)- round(float(labelUnT2.get())*16000/256 - 1))
+    print(n1)
+    cmd_ = '<3'+str(n1)+'>'
     re = serJ18.transmit(cmd_, 10)
     print (re)
     cmd_ = '<21>'
     re = serJ18.transmit(cmd_, 10)
     print (re)
     n1=int(re)
+    st1=(n1+1)*256/16000 + (n2+1)*256/16000 
     labelUnT1.delete(0, END)
-    labelUnT1.insert(0, str(n1))
-    
-    
-def setT2():
-    global n2
-    cmd_ = '<4'+str(labelUnT2.get())+'>'
+    labelUnT1.insert(0, str(st1))
+    n2 = int(round(float(labelUnT2.get())*16000/256 - 1))
+    print(n2)
+    cmd_ = '<4'+str(n2)+'>'
     re = serJ18.transmit(cmd_, 10)
     print (re)
     cmd_ = '<22>'
     re = serJ18.transmit(cmd_, 10)
     print (re)
     n2=int(re)
+    st2=(n2+1)*256/16000
     labelUnT2.delete(0, END)
-    labelUnT2.insert(0, str(n2))        
+    labelUnT2.insert(0, str(st2))
+    cmdUnblank['state'] = 'normal'
+    
+    
+def setT2():
+    global n2, n1
+    cmdUnblank['state'] = 'disable'
+    n2 = int(round(float(labelUnT2.get())*16000/256 - 1))
+    print(n2)
+    cmd_ = '<4'+str(n2)+'>'
+    re = serJ18.transmit(cmd_, 10)
+    print (re)
+    cmd_ = '<22>'
+    re = serJ18.transmit(cmd_, 10)
+    print (re)
+    n2=int(re)
+    st2=(n2+1)*256/16000
+    labelUnT2.delete(0, END)
+    labelUnT2.insert(0, str(st2))
+    n1 = int(round(float(labelUnT1.get())*16000/256 - 1)- round(float(labelUnT2.get())*16000/256 - 1))
+    print(n1)
+    cmd_ = '<3'+str(n1)+'>'
+    re = serJ18.transmit(cmd_, 10)
+    print (re)
+    cmd_ = '<21>'
+    re = serJ18.transmit(cmd_, 10)
+    print (re)
+    n1=int(re)
+    st1=(n1+1)*256/16000 + (n2+1)*256/16000 
+    labelUnT1.delete(0, END)
+    labelUnT1.insert(0, str(st1))
+    cmdUnblank['state'] = 'normal'        
 
 cmdConnectJ18['command'] = connectJ18
 cmdOnOf['command'] = setOnOff
@@ -444,7 +489,8 @@ def update():
             elif reState == "3B":
                 labelState.configure(text="operate")
                 cmdHeadBody["state"] = "disable"
-                cmdUnblank['state'] = "normal"
+                if fExtUnblank.get() == 0:
+                    cmdUnblank['state'] = "normal"
                 work_regime = 3                
             elif reState == "20":
                 labelState.configure(text="off")
